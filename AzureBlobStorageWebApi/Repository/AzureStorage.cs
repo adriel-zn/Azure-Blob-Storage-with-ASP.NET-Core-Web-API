@@ -12,12 +12,14 @@ namespace AzureBlobStorage.WebApi.Repository
 
         private readonly string _storageConnectionString;
         private readonly string _storageContainerName;
+        private readonly string _storageFolderName;
         private readonly ILogger<AzureStorage> _logger;
 
         public AzureStorage(IConfiguration configuration, ILogger<AzureStorage> logger)
         {
             _storageConnectionString = configuration.GetValue<string>("BlobConnectionString");
             _storageContainerName = configuration.GetValue<string>("BlobContainerName");
+            _storageFolderName = configuration.GetValue<string>("BlobLogs");
             _logger = logger;
         }
 
@@ -27,7 +29,7 @@ namespace AzureBlobStorage.WebApi.Repository
         {
             BlobContainerClient client = new BlobContainerClient(_storageConnectionString, _storageContainerName);
 
-            BlobClient file = client.GetBlobClient(blobFilename);
+            BlobClient file = client.GetBlobClient(_storageFolderName + blobFilename);
 
             try
             {
@@ -55,7 +57,7 @@ namespace AzureBlobStorage.WebApi.Repository
             try
             {
                 // Get a reference to the blob uploaded earlier from the API in the container from configuration settings
-                BlobClient file = client.GetBlobClient(blobFilename);
+                BlobClient file = client.GetBlobClient(_storageFolderName + blobFilename);
 
                 // Check if the file exists in the container
                 if (await file.ExistsAsync())
@@ -97,7 +99,7 @@ namespace AzureBlobStorage.WebApi.Repository
             {
                 // Add each file retrieved from the storage container to the files list by creating a BlobDto object
                 string uri = container.Uri.ToString();
-                var name = file.Name;
+                var name = _storageFolderName + file.Name;
                 var fullUri = $"{uri}/{name}";
 
                 files.Add(new BlobDto {
@@ -122,7 +124,7 @@ namespace AzureBlobStorage.WebApi.Repository
             try
             {
                 // Get a reference to the blob just uploaded from the API in a container from configuration settings
-                BlobClient client = container.GetBlobClient(blob.FileName);
+                BlobClient client = container.GetBlobClient(_storageFolderName + blob.FileName);
 
                 // Open a stream for the file we want to upload
                 await using (Stream? data = blob.OpenReadStream())
